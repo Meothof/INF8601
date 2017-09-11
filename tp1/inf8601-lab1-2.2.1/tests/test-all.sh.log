@@ -1,0 +1,6 @@
+dragon_pthread.c:132 Unimplemented block dragon_limits_pthread
+dragon_tbb.cpp:109 Unimplemented block dragon_limits_tbb
+dragon_pthread.c:41 Unimplemented block dragon_draw_pthread
+dragon_pthread.c:132 Unimplemented block dragon_limits_pthread
+Segmentation fault (core dumped)
+FAIL test-all.sh (exit status: 139)
