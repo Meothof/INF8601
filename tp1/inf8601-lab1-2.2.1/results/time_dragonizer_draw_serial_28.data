@@ -1,0 +1,3 @@
+cmd=draw lib=serial power=28
+threads,sys,user,elapsed
+1,0.193,11.637,11.850
