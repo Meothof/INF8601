@@ -21,28 +21,6 @@ using namespace tbb;
 
 
 class DragonLimits {
-	public:
-	DragonLimits()
-	{
-		piece_init(&value);
-	}
-	DragonLimits(const DragonLimits& drgL, split)
-	{
-		piece_init(&value);
-	}
-	void operator()(const blocked_range<int>& r)
-	{
-		piece_limit(r.begin(), r.end(), &value);
-	}
-	void join(DragonLimits& p)
-	{
-		piece_merge(&value, p.value);
-	}
-	piece_t& getPiece()
-	{
-		return value;
-	}
-	piece_t value;	
 
 };
 
@@ -53,37 +31,10 @@ class DragonDraw {
 
 class DragonRender {
 
-	public:
-	DragonRender(struct draw_data* parData)
-		: data(parData)
-		{
-		}
-	DragonRender(const DragonRender& drgR)
-		: data(drgR.data)
-		{
-		}
-	void operator()(const blocked_range<int>& r) const
-	{
-		scale_dragon(r.begin(), r.end(), data->image, data->image_width, data->image_height, data->dragon, data->dragon_width, data->dragon_height, data->palette);
-	}
-	struct draw_data* data;
 };
 
 class DragonClear {
-	public:
-	DragonClear(char initVal, char *parCanvas): value(initVal), canvas(parCanvas)
-	{
-	}
-	DragonClear(const DragonClear& drgC): value(drgC.value), canvas(drgC.canvas)
-	{
-	}	
-	void operator()(const blocked_range<int>& r) const
-	{
-		init_canvas(r.begin(), r.end(), canvas, -1);
-	}	
-	char value;
-	char *canvas;
-
+	
 };
 
 int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uint64_t size, int nb_thread)
