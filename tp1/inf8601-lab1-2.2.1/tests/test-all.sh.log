@@ -1,6 +1,13 @@
-dragon_pthread.c:132 Unimplemented block dragon_limits_pthread
-dragon_tbb.cpp:109 Unimplemented block dragon_limits_tbb
-dragon_pthread.c:41 Unimplemented block dragon_draw_pthread
-dragon_pthread.c:132 Unimplemented block dragon_limits_pthread
-Segmentation fault (core dumped)
-FAIL test-all.sh (exit status: 139)
+dragon_tbb.cpp:91 Unimplemented block dragon_draw_tbb
+PASS     limits    pthread
+FAIL     limits        tbb
+expected: (-2730,-1365;682,2730)
+actual  : (0,0;0,0)
+FAIL       draw    pthread threshold=20 gap=13552710 (96.998%)
+expected: dragon_check_failed_serial.ppm
+actual  : dragon_check_failed_pthread.ppm
+FAIL       draw        tbb threshold=20 gap=-1 (-0.000%)
+expected: dragon_check_failed_serial.ppm
+actual  : dragon_check_failed_tbb.ppm
+Error while executing command check
+FAIL test-all.sh (exit status: 1)
