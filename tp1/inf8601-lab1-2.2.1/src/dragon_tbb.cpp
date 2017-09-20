@@ -54,16 +54,55 @@ piece_t DragonLimits::getPiece(){
 }
 
 class DragonDraw {
+	private:
+	//attributes
+
+	public:
+		DragonDraw(){
+			
+		}
+		DragonDraw(const DragonDraw& dragon){
+			
+		}
+		void operator()(const blocked_range<uint64_t> & r){
+			
+		}
 
 };
 
 
 class DragonRender {
+	private:
+	//attributes
+
+	public:
+		DragonRender(){
+			
+		}
+		DragonRender(const DragonRender& dragon){
+			
+		}
+		void operator()(const blocked_range<uint64_t> & r){
+			
+		}
 
 };
 
 class DragonClear {
+	private:
+	//attributes
 
+	public:
+		DragonClear(){
+			
+		}
+		DragonClear(const DragonClear& dragon){
+			
+		}
+		void operator()(const blocked_range<uint64_t> & r){
+			
+		}
+	
 };
 
 int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uint64_t size, int nb_thread)
