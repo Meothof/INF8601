@@ -1,8 +1,6 @@
-dragon_tbb.cpp:91 Unimplemented block dragon_draw_tbb
+dragon_tbb.cpp:68 Unimplemented block dragon_draw_tbb
 PASS     limits    pthread
-FAIL     limits        tbb
-expected: (-2730,-1365;682,2730)
-actual  : (0,0;0,0)
+PASS     limits        tbb
 PASS       draw    pthread threshold=20 gap=0 (0.000%)
 FAIL       draw        tbb threshold=20 gap=-1 (-0.000%)
 expected: dragon_check_failed_serial.ppm

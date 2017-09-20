@@ -21,8 +21,37 @@ using namespace tbb;
 
 
 class DragonLimits {
+	private:
+	
+		piece_t piece;
 
+	public:
+	
+		DragonLimits(){
+			piece_init(&piece);
+		}
+		//Splitting constructor nécessaire au fonctionnement de parallel_reduce
+		DragonLimits(const DragonLimits& dragon, split){
+			piece_init(&piece);
+		}
+		//Accesseur de l'attribut piece
+		piece_t getPiece();
+	
+		//operator qui accumule le resultat du calcul de piece_limit pour le morceau
+		void operator()(const blocked_range<uint64_t> & r){
+			piece_limit(r.begin(), r.end(), &piece);
+		}
+		//methode join permet de merge le morceau obtenu avec l'ensemble
+		void join(DragonLimits& dragon){
+			piece_merge(&piece, dragon.piece);
+		}
+	
 };
+
+//Accesseur de piece pour DragonLimits
+piece_t DragonLimits::getPiece(){
+	return piece;
+}
 
 class DragonDraw {
 
@@ -34,12 +63,12 @@ class DragonRender {
 };
 
 class DragonClear {
-	
+
 };
 
 int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uint64_t size, int nb_thread)
 {
-		TODO("dragon_draw_tbb");
+	TODO("dragon_draw_tbb");
 	struct draw_data data;
 	limits_t limits;
 	char *dragon = NULL;
@@ -95,7 +124,6 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 
 	/* 3. Dessiner le dragon : DragonDraw */
 
-
 	/* 4. Effectuer le rendu final */
 
 
@@ -103,10 +131,10 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 
 	free_palette(palette);
 	FREE(data.tid);
-	//*canvas = dragon;
-	*canvas = NULL;
+	*canvas = dragon;
 	return 0;
 }
+
 
 /*
  * Calcule les limites en terme de largeur et de hauteur de
@@ -115,14 +143,10 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 int dragon_limits_tbb(limits_t *limits, uint64_t size, int nb_thread)
 {
 	//	TODO("dragon_limits_tbb");
-	DragonLimits lim;
-
+	DragonLimits dragonLimits;
 	task_scheduler_init task(nb_thread);
-
-	parallel_reduce(blocked_range<int>(0, size), lim);
-
-	piece_t piece;
-	piece_init(&piece);
+	parallel_reduce(blocked_range<uint64_t>(0,size), dragonLimits);
+	piece_t piece = dragonLimits.getPiece();
 	*limits = piece.limits;
 	return 0;
 }
