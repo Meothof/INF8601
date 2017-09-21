@@ -33,34 +33,27 @@ void *dragon_draw_worker(void *data)
 	
 	
 	// Conversion de la structure passée en pointeur
-	struct draw_data *drw = (struct draw_data *) data;
-//	printf("entrée dans *dragon_draw_worker pour %d\n",drw->id);
+	struct draw_data *drw_data = (struct draw_data *) data;
 	/* 1. Initialiser la surface */
-	// Pour éviter un débordement des entiers lors des calculs
-	long int dragon_surface = drw->dragon_width * drw->dragon_height;
+	uint64_t start = drw_data->id * drw_data->size /drw_data->nb_thread;
+	uint64_t end = (drw_data->id + 1) * drw_data->size /drw_data->nb_thread;
 	
-	uint64_t start = drw->id * drw->size /drw->nb_thread;
-	uint64_t end = (drw->id + 1) * drw->size /drw->nb_thread;
+	// On calcule la surface 
+	long int dragon_surface = drw_data->dragon_width * drw_data->dragon_height;
 	
-	uint64_t startCanvas = drw->id*dragon_surface/(long int)drw->nb_thread;
-	uint64_t endCanvas = (drw->id+1)*dragon_surface/(long int)drw->nb_thread;
-	
-	
+	uint64_t startCanvas = drw_data->id*dragon_surface/(long int)drw_data->nb_thread;
+	uint64_t endCanvas = (drw_data->id+1)*dragon_surface/(long int)drw_data->nb_thread;
 
+	init_canvas(startCanvas, endCanvas, drw_data->dragon, -1);
 	
-	
-	init_canvas(startCanvas, endCanvas, drw->dragon,-1);
-	
-	// Syncronisation des threads
-	pthread_barrier_wait(drw->barrier);
+	pthread_barrier_wait(drw_data->barrier);
 	/* 2. Dessiner le dragon */
-	dragon_draw_raw(start, end, drw->dragon, drw->dragon_width, drw->dragon_height, drw->limits, drw->id);
+	dragon_draw_raw(start, end, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->limits, drw_data->id);
 	/* 3. Effectuer le rendu final */
-	start = drw->id * drw->image_height /drw->nb_thread;
-	end = (drw->id + 1) * drw->image_height / drw->nb_thread;
-	scale_dragon(start, end, drw->image, drw->image_width, drw->image_height, drw->dragon, drw->dragon_width, drw->dragon_height, drw->palette);
-//	printf("rendu final %d\n",drw->id);
-	pthread_barrier_wait(drw->barrier);
+	start = drw_data->id * drw_data->image_height /drw_data->nb_thread;
+	end = (drw_data->id + 1) * drw_data->image_height / drw_data->nb_thread;
+	scale_dragon(start, end, drw_data->image, drw_data->image_width, drw_data->image_height, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->palette);
+	pthread_barrier_wait(drw_data->barrier);
 	
 	return NULL;
 }
@@ -89,7 +82,10 @@ int dragon_draw_pthread(char **canvas, struct rgb *image, int width, int height,
 	/* 1. Initialiser barrier. */
 
 	r = pthread_barrier_init(&barrier, NULL, nb_thread);
-		
+	if(r != 0){
+		printf("erreur initialisation de barrier");
+		goto err;
+	}
 	if (dragon_limits_pthread(&lim, size, nb_thread) < 0)
 		goto err;
 
@@ -132,27 +128,20 @@ int dragon_draw_pthread(char **canvas, struct rgb *image, int width, int height,
 	/* 2. Lancement du calcul parallèle principal avec draw_dragon_worker */
 	for (i = 0; i < nb_thread; i++) 
 	{
-		
-	/*Problème ici*/
 		data[i] = info;
 		data[i].id = i;
 		if(pthread_create(&threads[i], NULL, dragon_draw_worker, &data[i])!=0)
 			goto err;
-//		printf("creation du thread draw %d :\n",i);
 	}
-	
-	
 	/* 3. Attendre la fin du traitement */
 	
 	for(i = 0; i < nb_thread; i++)
 	{
 		pthread_join(threads[i],NULL);
-//		printf("fin du thread_draw %d \n", i);
 	}
 
 	/* 4. Destruction des variables (à compléter). */ 
 	if (pthread_barrier_destroy(&barrier) != 0) {
-//		printf("barrier destroy error\n");
 		goto err;
 	}
 
@@ -172,8 +161,6 @@ err:
 void *dragon_limit_worker(void *data)
 {
 	struct limit_data *lim = (struct limit_data *) data;
-//	printf("entrée dans *dragon_limit_worker pour %d\n",lim->id);
-
 	piece_limit(lim->start, lim->end, &lim->piece);
 	return NULL;
 }
@@ -195,8 +182,14 @@ int dragon_limits_pthread(limits_t *limits, uint64_t size, int nb_thread)
 	piece_init(&master);
 
 	/* 1. ALlouer de l'espace pour threads et threads_data. */
+
+	
 	threads = malloc(sizeof(pthread_t) * nb_thread);
 	thread_data = malloc(sizeof(struct limit_data)* nb_thread);
+	if(threads == NULL || thread_data == NULL){
+		printf("Erreur d'allocation mémoire pour threads et/ou nb_thread");
+		goto err;
+	}
 	
 	/* 2. Lancement du calcul en parallèle avec dragon_limit_worker. */
 	for(i =0 ; i<nb_thread; i++){
@@ -205,8 +198,6 @@ int dragon_limits_pthread(limits_t *limits, uint64_t size, int nb_thread)
 		thread_data[i].end = (i+1)*size/nb_thread;
 		thread_data[i].piece = master;
 		pthread_create(&threads[i],NULL,dragon_limit_worker,&thread_data[i]);
-//		printf("création du thread limite %d: \n", i);
-		
 	}
 	
 	/* 3. Attendre la fin du traitement. */

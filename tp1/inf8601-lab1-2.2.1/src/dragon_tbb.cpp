@@ -56,16 +56,17 @@ piece_t DragonLimits::getPiece(){
 class DragonDraw {
 	private:
 	//attributes
+	struct draw_data* data;
 
 	public:
-		DragonDraw(){
-			
+		DragonDraw(struct draw_data* d){
+			data = d;
 		}
 		DragonDraw(const DragonDraw& dragon){
-			
+			data = dragon.data;
 		}
-		void operator()(const blocked_range<uint64_t> & r){
-			
+		void operator()(const blocked_range<uint64_t> & r) const{
+			dragon_draw_raw(r.begin(), r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, data->id);
 		}
 
 };
@@ -74,16 +75,19 @@ class DragonDraw {
 class DragonRender {
 	private:
 	//attributes
+	struct draw_data* data;
 
 	public:
-		DragonRender(){
-			
+		//Constructeur initial
+		DragonRender(struct draw_data* d){
+			data = d;
 		}
+		//Copy constructor : fait des copies de l'objet pour les différents threads
 		DragonRender(const DragonRender& dragon){
-			
+			data = dragon.data;
 		}
-		void operator()(const blocked_range<uint64_t> & r){
-			
+		void operator()(const blocked_range<uint64_t> & r) const{
+			scale_dragon(r.begin(), r.end(), data->image, data->image_width, data->image_height, data->dragon, data->dragon_width, data->dragon_height, data->palette );
 		}
 
 };
@@ -91,23 +95,31 @@ class DragonRender {
 class DragonClear {
 	private:
 	//attributes
+	char* canvas; 
+	char defaultValue;
+	
 
 	public:
-		DragonClear(){
-			
+		//Constructeur initial
+		DragonClear(char* c, char value){
+			canvas = c;
+			defaultValue = value;
 		}
+		//Copy constructor : fait des copies de l'objet pour les différents threads
 		DragonClear(const DragonClear& dragon){
-			
+			canvas = dragon.canvas;
+			defaultValue = dragon.defaultValue;
 		}
-		void operator()(const blocked_range<uint64_t> & r){
-			
+	
+		void operator()(const blocked_range<uint64_t>& r) const{
+			init_canvas(r.begin(), r.end(), canvas, defaultValue);
 		}
 	
 };
 
 int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uint64_t size, int nb_thread)
 {
-	TODO("dragon_draw_tbb");
+//	TODO("dragon_draw_tbb");
 	struct draw_data data;
 	limits_t limits;
 	char *dragon = NULL;
@@ -160,11 +172,15 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 	data.tid = (int *) calloc(nb_thread, sizeof(int));
 
 	/* 2. Initialiser la surface : DragonClear */
+	DragonClear dragonClear(dragon, -1);
+	parallel_for(blocked_range<uint64_t>(0,dragon_surface),dragonClear);
 
 	/* 3. Dessiner le dragon : DragonDraw */
-
+	DragonDraw dragonDraw(&data);
+	parallel_for(blocked_range<uint64_t>(0,data.size), dragonDraw);
 	/* 4. Effectuer le rendu final */
-
+	DragonRender dragonRender(&data);
+	parallel_for(blocked_range<uint64_t>(0,data.image_height), dragonRender);
 
 	init.terminate();
 

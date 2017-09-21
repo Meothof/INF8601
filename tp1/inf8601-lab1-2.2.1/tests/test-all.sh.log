@@ -1,9 +1,0 @@
-dragon_tbb.cpp:110 Unimplemented block dragon_draw_tbb
-PASS     limits    pthread
-PASS     limits        tbb
-PASS       draw    pthread threshold=20 gap=0 (0.000%)
-FAIL       draw        tbb threshold=20 gap=13552690 (96.998%)
-expected: dragon_check_failed_serial.ppm
-actual  : dragon_check_failed_tbb.ppm
-Error while executing command check
-FAIL test-all.sh (exit status: 1)
