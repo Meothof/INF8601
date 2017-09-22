@@ -38,15 +38,15 @@ void *dragon_draw_worker(void *data)
 	// On calcule la surface 
 	long int dragon_surface = drw_data->dragon_width * drw_data->dragon_height;
 	
-	uint64_t startCanvas = drw_data->id*dragon_surface/(long int)drw_data->nb_thread;
-	uint64_t endCanvas = (drw_data->id+1)*dragon_surface/(long int)drw_data->nb_thread;
+	uint64_t start_canvas = drw_data->id*dragon_surface / (long int)drw_data->nb_thread;
+	uint64_t end_canvas = (drw_data->id+1)*dragon_surface / (long int)drw_data->nb_thread;
 
-	init_canvas(startCanvas, endCanvas, drw_data->dragon, -1);
+	init_canvas(start_canvas, end_canvas, drw_data->dragon, -1);
 	
 	pthread_barrier_wait(drw_data->barrier);
 	/* 2. Dessiner le dragon */
-	uint64_t start = drw_data->id * drw_data->size /drw_data->nb_thread;
-	uint64_t end = (drw_data->id + 1) * drw_data->size /drw_data->nb_thread;
+	uint64_t start = drw_data->id * drw_data->size / drw_data->nb_thread;
+	uint64_t end = (drw_data->id + 1) * drw_data->size / drw_data->nb_thread;
 	dragon_draw_raw(start, end, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->limits, drw_data->id);
 	
 	/* 3. Effectuer le rendu final */
