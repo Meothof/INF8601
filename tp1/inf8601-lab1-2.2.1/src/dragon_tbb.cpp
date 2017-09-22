@@ -33,6 +33,7 @@ class DragonLimits {
 		//Splitting constructor nécessaire au fonctionnement de parallel_reduce
 		DragonLimits(const DragonLimits& dragon, split){
 			piece_init(&piece);
+			
 		}
 		//Accesseur de l'attribut piece
 		piece_t getPiece();
@@ -61,12 +62,13 @@ class DragonDraw {
 	public:
 		DragonDraw(struct draw_data* d){
 			data = d;
+			
 		}
 		DragonDraw(const DragonDraw& dragon){
 			data = dragon.data;
 		}
 		void operator()(const blocked_range<uint64_t> & r) const{
-			dragon_draw_raw(r.begin(), r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, data->id);
+			dragon_draw_raw(r.begin(), r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, gettid());
 		}
 
 };

@@ -35,9 +35,6 @@ void *dragon_draw_worker(void *data)
 	// Conversion de la structure passée en pointeur
 	struct draw_data *drw_data = (struct draw_data *) data;
 	/* 1. Initialiser la surface */
-	uint64_t start = drw_data->id * drw_data->size /drw_data->nb_thread;
-	uint64_t end = (drw_data->id + 1) * drw_data->size /drw_data->nb_thread;
-	
 	// On calcule la surface 
 	long int dragon_surface = drw_data->dragon_width * drw_data->dragon_height;
 	
@@ -48,7 +45,10 @@ void *dragon_draw_worker(void *data)
 	
 	pthread_barrier_wait(drw_data->barrier);
 	/* 2. Dessiner le dragon */
+	uint64_t start = drw_data->id * drw_data->size /drw_data->nb_thread;
+	uint64_t end = (drw_data->id + 1) * drw_data->size /drw_data->nb_thread;
 	dragon_draw_raw(start, end, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->limits, drw_data->id);
+	
 	/* 3. Effectuer le rendu final */
 	start = drw_data->id * drw_data->image_height /drw_data->nb_thread;
 	end = (drw_data->id + 1) * drw_data->image_height / drw_data->nb_thread;
