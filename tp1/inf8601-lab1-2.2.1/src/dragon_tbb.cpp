@@ -72,7 +72,8 @@ class DragonDraw {
 	void operator()(const blocked_range<uint64_t> & r) const{
 		//version 1
 		//			dragon_draw_raw(r.begin(), r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, gettid());
-
+		
+		tid_map->getIdFromTid(gettid());
 		uint64_t start = r.begin();
 		int id_start = start * data->nb_thread / data->size;
 		int id_end = id_start + 1;
@@ -225,7 +226,6 @@ int dragon_limits_tbb(limits_t *limits, uint64_t size, int nb_thread)
 	DragonLimits dragonLimits;
 	task_scheduler_init task(nb_thread);
 	parallel_reduce(blocked_range<uint64_t>(0,size), dragonLimits);
-	piece_t piece = dragonLimits.getPiece();
-	*limits = piece.limits;
+	*limits = dragonLimits.getPiece().limits;
 	return 0;
 }
