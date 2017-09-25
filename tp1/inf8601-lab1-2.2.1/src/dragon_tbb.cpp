@@ -19,7 +19,7 @@ extern "C" {
 using namespace std;
 using namespace tbb;
 
-
+static int nb_intervalle = 0;
 
 class DragonLimits {
 	private:
@@ -115,6 +115,7 @@ class DragonRender {
 		data = dragon.data;
 	}
 	void operator()(const blocked_range<uint64_t> & r) const{
+		
 		scale_dragon(r.begin(), r.end(), data->image, data->image_width, data->image_height, data->dragon, data->dragon_width, data->dragon_height, data->palette );
 	}
 
@@ -195,6 +196,7 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 	data.palette = palette;
 	data.tid = (int *) calloc(nb_thread, sizeof(int));
 	TidMap tid_map(nb_thread);
+	
 
 	/* 2. Initialiser la surface : DragonClear */
 	DragonClear dragonClear(dragon);
@@ -208,10 +210,13 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 	parallel_for(blocked_range<uint64_t>(0,data.image_height), dragonRender);
 
 	init.terminate();
-
+	
 	free_palette(palette);
 	FREE(data.tid);
 	*canvas = dragon;
+	
+	tid_map.dump();
+	cout << "nb intervalle :"<<nb_intervalle<< "\n";
 	return 0;
 }
 
@@ -224,6 +229,7 @@ int dragon_limits_tbb(limits_t *limits, uint64_t size, int nb_thread)
 {
 	//	TODO("dragon_limits_tbb");
 	DragonLimits dragonLimits;
+	//on veut qu'il n'y ai que nb_thread, on le précise donc avec la méthode optionnelle task_scheduler_init
 	task_scheduler_init task(nb_thread);
 	parallel_reduce(blocked_range<uint64_t>(0,size), dragonLimits);
 	*limits = dragonLimits.getPiece().limits;

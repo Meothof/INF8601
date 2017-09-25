@@ -29,11 +29,11 @@ void printf_threadsafe(char *format, ...)
 }
 
 void *dragon_draw_worker(void *data)
-{
-	
-	
+{	
 	// Conversion de la structure passée en pointeur
 	struct draw_data *drw_data = (struct draw_data *) data;
+	
+	printf("%d=%d ",drw_data->id, gettid());
 	/* 1. Initialiser la surface */
 	// On calcule la surface 
 	long int dragon_surface = drw_data->dragon_width * drw_data->dragon_height;
@@ -50,7 +50,7 @@ void *dragon_draw_worker(void *data)
 	dragon_draw_raw(start, end, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->limits, drw_data->id);
 	
 	/* 3. Effectuer le rendu final */
-	start = drw_data->id * drw_data->image_height /drw_data->nb_thread;
+	start = drw_data->id * drw_data->image_height / drw_data->nb_thread;
 	end = (drw_data->id + 1) * drw_data->image_height / drw_data->nb_thread;
 	scale_dragon(start, end, drw_data->image, drw_data->image_width, drw_data->image_height, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->palette);
 	pthread_barrier_wait(drw_data->barrier);
@@ -126,12 +126,15 @@ int dragon_draw_pthread(char **canvas, struct rgb *image, int width, int height,
 	
 	
 	/* 2. Lancement du calcul parallèle principal avec draw_dragon_worker */
+	printf("{");
 	for (i = 0; i < nb_thread; i++) 
 	{
 		data[i] = info;
 		data[i].id = i;
+		
 		if(pthread_create(&threads[i], NULL, dragon_draw_worker, &data[i])!=0)
 			goto err;
+		
 	}
 	/* 3. Attendre la fin du traitement */
 	
@@ -139,7 +142,7 @@ int dragon_draw_pthread(char **canvas, struct rgb *image, int width, int height,
 	{
 		pthread_join(threads[i],NULL);
 	}
-
+	printf("}\n");
 	/* 4. Destruction des variables (à compléter). */ 
 	if (pthread_barrier_destroy(&barrier) != 0) {
 		goto err;
