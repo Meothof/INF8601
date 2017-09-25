@@ -82,10 +82,13 @@ class DragonDraw {
 			id_end = id_start + 1;
 			end = id_end * data->size / data->nb_thread;
 			if(r.end() <= end){
+				nb_intervalle++;	
+			
 				dragon_draw_raw(start, r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, id_start);
 				break;
 			}
 			else{
+				nb_intervalle++;
 				dragon_draw_raw(start, end, data->dragon, data->dragon_width, data->dragon_height, data->limits, id_start);
 				start = end;
 				id_start++;
@@ -216,7 +219,7 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 	*canvas = dragon;
 	
 	tid_map.dump();
-	cout << "nb intervalle :"<<nb_intervalle<< "\n";
+	cout << "nb intervalles :"<<nb_intervalle<< "\n";
 	return 0;
 }
 

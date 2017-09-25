@@ -16,6 +16,7 @@
 #include "dragon_pthread.h"
 
 pthread_mutex_t mutex_stdout;
+static int nb_intervalle = 0;
 
 void printf_threadsafe(char *format, ...)
 {
@@ -32,8 +33,7 @@ void *dragon_draw_worker(void *data)
 {	
 	// Conversion de la structure passée en pointeur
 	struct draw_data *drw_data = (struct draw_data *) data;
-	
-	printf("%d=%d ",drw_data->id, gettid());
+	printf_threadsafe("%d=%d ",drw_data->id, gettid());
 	/* 1. Initialiser la surface */
 	// On calcule la surface 
 	long int dragon_surface = drw_data->dragon_width * drw_data->dragon_height;
@@ -47,6 +47,7 @@ void *dragon_draw_worker(void *data)
 	/* 2. Dessiner le dragon */
 	uint64_t start = drw_data->id * drw_data->size / drw_data->nb_thread;
 	uint64_t end = (drw_data->id + 1) * drw_data->size / drw_data->nb_thread;
+	nb_intervalle++;
 	dragon_draw_raw(start, end, drw_data->dragon, drw_data->dragon_width, drw_data->dragon_height, drw_data->limits, drw_data->id);
 	
 	/* 3. Effectuer le rendu final */
@@ -143,6 +144,7 @@ int dragon_draw_pthread(char **canvas, struct rgb *image, int width, int height,
 		pthread_join(threads[i],NULL);
 	}
 	printf("}\n");
+	printf("nb intervalles :%d \n", nb_intervalle);
 	/* 4. Destruction des variables (à compléter). */ 
 	if (pthread_barrier_destroy(&barrier) != 0) {
 		goto err;
