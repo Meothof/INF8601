@@ -70,23 +70,31 @@ class DragonDraw {
 		tid_map = dragon.tid_map;
 	}
 	void operator()(const blocked_range<uint64_t> & r) const{
-		//version 1
-		//			dragon_draw_raw(r.begin(), r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, gettid());
 		
+		//Ajout du tid courant au tid_map
 		tid_map->getIdFromTid(gettid());
+		
+		//Initialisation de l'intervalle et des id associés
 		uint64_t start = r.begin();
 		int id_start = start * data->nb_thread / data->size;
 		int id_end = id_start + 1;
 		uint64_t end = id_end * data->size / data->nb_thread;
+		
+		/* 
+		 * Boucle infinie qui permet de dessiner le dragon 
+		 * en découpant des sous intervalles de [r.begin() , r.end()].
+		*/
 		while(true){
 			id_end = id_start + 1;
 			end = id_end * data->size / data->nb_thread;
+			
+			//Si on sort de l'intervalle [r.begin(), r.end()] alors on s'arrete à r.end(). 
 			if(r.end() <= end){
 				nb_intervalle++;	
-			
 				dragon_draw_raw(start, r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, id_start);
 				break;
 			}
+			//Sinon on continue en passant au sous intervalle suivant
 			else{
 				nb_intervalle++;
 				dragon_draw_raw(start, end, data->dragon, data->dragon_width, data->dragon_height, data->limits, id_start);
