@@ -19,6 +19,7 @@ extern "C" {
 using namespace std;
 using namespace tbb;
 
+//création du compteur d'intervalles
 static int nb_intervalle = 0;
 
 class DragonLimits {
@@ -90,12 +91,14 @@ class DragonDraw {
 			
 			//Si on sort de l'intervalle [r.begin(), r.end()] alors on s'arrete à r.end(). 
 			if(r.end() <= end){
+				//Incrémentation du nombre d'intervalles
 				nb_intervalle++;	
 				dragon_draw_raw(start, r.end(), data->dragon, data->dragon_width, data->dragon_height, data->limits, id_start);
 				break;
 			}
 			//Sinon on continue en passant au sous intervalle suivant
 			else{
+				//Incrémentation du nombre d'intervalle
 				nb_intervalle++;
 				dragon_draw_raw(start, end, data->dragon, data->dragon_width, data->dragon_height, data->limits, id_start);
 				start = end;
@@ -210,6 +213,7 @@ int dragon_draw_tbb(char **canvas, struct rgb *image, int width, int height, uin
 	
 
 	/* 2. Initialiser la surface : DragonClear */
+	
 	DragonClear dragonClear(dragon);
 	parallel_for(blocked_range<uint64_t>(0,dragon_surface),dragonClear);
 

@@ -16,6 +16,8 @@
 #include "dragon_pthread.h"
 
 pthread_mutex_t mutex_stdout;
+
+//création du compteur d'intervalles
 static int nb_intervalle = 0;
 
 void printf_threadsafe(char *format, ...)
