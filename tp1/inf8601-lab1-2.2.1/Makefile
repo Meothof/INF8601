@@ -85,8 +85,8 @@ POST_INSTALL = :
 NORMAL_UNINSTALL = :
 PRE_UNINSTALL = :
 POST_UNINSTALL = :
-build_triplet = x86_64-pc-linux-gnu
-host_triplet = x86_64-pc-linux-gnu
+build_triplet = x86_64-unknown-linux-gnu
+host_triplet = x86_64-unknown-linux-gnu
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/configure.ac
@@ -201,14 +201,14 @@ distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
-ACLOCAL = ${SHELL} /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing aclocal-1.15
+ACLOCAL = ${SHELL} /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing aclocal-1.15
 AMTAR = $${TAR-tar}
 AM_DEFAULT_VERBOSITY = 0
 AR = ar
-AUTOCONF = ${SHELL} /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing autoconf
-AUTOHEADER = ${SHELL} /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing autoheader
-AUTOMAKE = ${SHELL} /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing automake-1.15
-AWK = mawk
+AUTOCONF = ${SHELL} /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing autoconf
+AUTOHEADER = ${SHELL} /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing autoheader
+AUTOMAKE = ${SHELL} /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing automake-1.15
+AWK = gawk
 CC = gcc
 CCDEPMODE = depmode=gcc3
 CFLAGS = -Wall -O2 -fomit-frame-pointer
@@ -227,10 +227,10 @@ DUMPBIN =
 ECHO_C = 
 ECHO_N = -n
 ECHO_T = 
-EGREP = /bin/grep -E
+EGREP = /usr/bin/grep -E
 EXEEXT = 
-FGREP = /bin/grep -F
-GREP = /bin/grep
+FGREP = /usr/bin/grep -F
+GREP = /usr/bin/grep
 INSTALL = /usr/bin/install -c
 INSTALL_DATA = ${INSTALL} -m 644
 INSTALL_PROGRAM = ${INSTALL}
@@ -245,9 +245,9 @@ LIPO =
 LN_S = ln -s
 LTLIBOBJS = 
 LT_SYS_LIBRARY_PATH = 
-MAKEINFO = ${SHELL} /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing makeinfo
+MAKEINFO = ${SHELL} /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1/missing makeinfo
 MANIFEST_TOOL = :
-MKDIR_P = /bin/mkdir -p
+MKDIR_P = /usr/bin/mkdir -p
 NM = /usr/bin/nm -B
 NMEDIT = 
 OBJDUMP = objdump
@@ -264,15 +264,15 @@ PACKAGE_URL =
 PACKAGE_VERSION = 2.2.1
 PATH_SEPARATOR = :
 RANLIB = ranlib
-SED = /bin/sed
+SED = /usr/bin/sed
 SET_MAKE = 
-SHELL = /bin/bash
+SHELL = /bin/sh
 STRIP = strip
 VERSION = 2.2.1
-abs_builddir = /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1
-abs_srcdir = /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1
-abs_top_builddir = /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1
-abs_top_srcdir = /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1
+abs_builddir = /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1
+abs_srcdir = /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1
+abs_top_builddir = /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1
+abs_top_srcdir = /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1
 ac_ct_AR = ar
 ac_ct_CC = gcc
 ac_ct_CXX = g++
@@ -283,26 +283,26 @@ am__quote =
 am__tar = $${TAR-tar} chof - "$$tardir"
 am__untar = $${TAR-tar} xf -
 bindir = ${exec_prefix}/bin
-build = x86_64-pc-linux-gnu
+build = x86_64-unknown-linux-gnu
 build_alias = 
 build_cpu = x86_64
 build_os = linux-gnu
-build_vendor = pc
+build_vendor = unknown
 builddir = .
 datadir = ${datarootdir}
 datarootdir = ${prefix}/share
 docdir = ${datarootdir}/doc/${PACKAGE_TARNAME}
 dvidir = ${docdir}
 exec_prefix = ${prefix}
-host = x86_64-pc-linux-gnu
+host = x86_64-unknown-linux-gnu
 host_alias = 
 host_cpu = x86_64
 host_os = linux-gnu
-host_vendor = pc
+host_vendor = unknown
 htmldir = ${docdir}
 includedir = ${prefix}/include
 infodir = ${datarootdir}/info
-install_sh = ${SHELL} /home/theo/Documents/INF8601/tp1/inf8601-lab1-2.2.1/install-sh
+install_sh = ${SHELL} /usagers/thmof/Documents/INF8601/tp1/inf8601-lab1-2.2.1/install-sh
 libdir = ${exec_prefix}/lib
 libexecdir = ${exec_prefix}/libexec
 localedir = ${datarootdir}/locale
@@ -314,7 +314,6 @@ pdfdir = ${docdir}
 prefix = /usr/local
 program_transform_name = s,x,x,
 psdir = ${docdir}
-runstatedir = ${localstatedir}/run
 sbindir = ${exec_prefix}/sbin
 sharedstatedir = ${prefix}/com
 srcdir = .
@@ -558,7 +557,7 @@ distdir: $(DISTFILES)
 	  ! -type d ! -perm -444 -exec $(install_sh) -c -m a+r {} {} \; \
 	|| chmod -R a+r "$(distdir)"
 dist-gzip: distdir
-	tardir=$(distdir) && $(am__tar) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).tar.gz
+	tardir=$(distdir) && $(am__tar) | eval GZIP= gzip $(GZIP_ENV) -c >$(distdir).tar.gz
 	$(am__post_remove_distdir)
 
 dist-bzip2: distdir
@@ -584,7 +583,7 @@ dist-shar: distdir
 	@echo WARNING: "Support for shar distribution archives is" \
 	               "deprecated." >&2
 	@echo WARNING: "It will be removed altogether in Automake 2.0" >&2
-	shar $(distdir) | GZIP=$(GZIP_ENV) gzip -c >$(distdir).shar.gz
+	shar $(distdir) | eval GZIP= gzip $(GZIP_ENV) -c >$(distdir).shar.gz
 	$(am__post_remove_distdir)
 
 dist-zip: distdir
@@ -602,7 +601,7 @@ dist dist-all:
 distcheck: dist
 	case '$(DIST_ARCHIVES)' in \
 	*.tar.gz*) \
-	  GZIP=$(GZIP_ENV) gzip -dc $(distdir).tar.gz | $(am__untar) ;;\
+	  eval GZIP= gzip $(GZIP_ENV) -dc $(distdir).tar.gz | $(am__untar) ;;\
 	*.tar.bz2*) \
 	  bzip2 -dc $(distdir).tar.bz2 | $(am__untar) ;;\
 	*.tar.lz*) \
@@ -612,7 +611,7 @@ distcheck: dist
 	*.tar.Z*) \
 	  uncompress -c $(distdir).tar.Z | $(am__untar) ;;\
 	*.shar.gz*) \
-	  GZIP=$(GZIP_ENV) gzip -dc $(distdir).shar.gz | unshar ;;\
+	  eval GZIP= gzip $(GZIP_ENV) -dc $(distdir).shar.gz | unshar ;;\
 	*.zip*) \
 	  unzip $(distdir).zip ;;\
 	esac
