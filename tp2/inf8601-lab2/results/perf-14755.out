@@ -1,0 +1,42 @@
+thread=1,func=fast,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=1,func=slow_a,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=1,func=slow_b,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=1,func=slow_c,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=1,func=slow_d,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=1,func=slow_e,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=1,func=slow_f,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=fast,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_a,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_b,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_c,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_d,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_e,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_f,ht=0
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=fast,ht=1
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_a,ht=1
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_b,ht=1
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_c,ht=1
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_d,ht=1
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_e,ht=1
+# started on Tue Oct  3 17:46:20 2017
+thread=2,func=slow_f,ht=1
+# started on Tue Oct  3 17:46:20 2017
