@@ -15,15 +15,15 @@
 
 int sinoscope_image_openmp(sinoscope_t *ptr)
 {
-//    TODO("sinoscope_image_openmp");
+    //    TODO("sinoscope_image_openmp");
     if (ptr == NULL)
         return -1;
-    
+
     sinoscope_t sino = *ptr;
     int x, y, index, taylor;
     struct rgb c;
     float val, px, py;
-    
+
     #pragma omp parallel for private(x, y, index, taylor, c, val, px, py) shared(sino) collapse(2)
     for(x=1; x < sino.width - 1; x++){
         for(y=1; y < sino.height - 1; y++){
@@ -35,16 +35,20 @@ int sinoscope_image_openmp(sinoscope_t *ptr)
             }
             val = (atan(1.0 * val) - atan(-1.0 * val)) / (M_PI);
             val = (val + 1) * 100;
-            
+
+            //Elemination du bruit avec un critical
             #pragma omp critical
-            value_color(&c, val, sino.interval, sino.interval_inv);
+            {
+                value_color(&c, val, sino.interval, sino.interval_inv);
+            }
+
             index = (y * 3) + (x * 3) * sino.width;
             sino.buf[index + 0] = c.r;
             sino.buf[index + 1] = c.g;
             sino.buf[index + 2] = c.b;
-            
+
         }
     }
-    
+
     return 0;
 }
