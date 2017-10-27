@@ -8,13 +8,13 @@
 #include <iostream>
 
 extern "C" {
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include "sinoscope.h"
-#include "color.h"
-#include "memory.h"
-#include "util.h"
+    #include <stdlib.h>
+    #include <stdio.h>
+    #include <string.h>
+    #include "sinoscope.h"
+    #include "color.h"
+    #include "memory.h"
+    #include "util.h"
 }
 
 #include "CL/opencl.h"
@@ -31,6 +31,9 @@ static cl_program prog = NULL;
 static cl_kernel kernel = NULL;
 
 static cl_mem output = NULL;
+//ajout
+static cl_mem sinoscope = NULL;
+
 
 int get_opencl_queue()
 {
@@ -86,10 +89,10 @@ int get_opencl_queue()
 
     ret = 0;
 
-done:
+    done:
     FREE(platform_ids);
     return ret;
-error:
+    error:
     ret = -1;
     goto done;
 }
@@ -121,9 +124,9 @@ int load_kernel_code(char **code, size_t *length)
     strncpy(kernel_code, code_start, kernel_size);
     *code = kernel_code;
     *length = kernel_size;
-done:
+    done:
     return ret;
-error:
+    error:
     ret = -1;
     FREE(kernel_code);
     goto done;
@@ -135,10 +138,18 @@ int create_buffer(int width, int height)
      * TODO: initialiser la memoire requise avec clCreateBuffer()
      */
     cl_int ret = 0;
-    goto error;
-done:
+    
+    output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 3*width*height*sizeof(unsigned char), NULL, &ret);
+    if(ret!=CL_SUCCESS)
+        goto error;
+    
+    
+    sinoscope = clCreateBuffer(context,CL_MEM_READ_ONLY ,sizeof(sinoscope_t), NULL, &ret);
+    if(ret!=CL_SUCCESS)
+        goto error;
+    done:
     return ret;
-error:
+    error:
     ret = -1;
     goto done;
 }
@@ -170,7 +181,7 @@ int opencl_init(int width, int height)
 
     free(code);
     return 0;
-error:
+    error:
     return -1;
 }
 
@@ -183,6 +194,10 @@ void opencl_shutdown()
     /*
      * TODO: liberer les ressources allouees
      */
+    if(prog) clReleaseProgram(prog);
+    if(kernel) clReleaseKernel(kernel);
+    if(output) clReleaseMemObject(output);
+    if(sinoscope) clReleaseMemObject(sinoscope);
 }
 
 int sinoscope_image_opencl(sinoscope_t *ptr)
@@ -207,15 +222,45 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
      *       Utilisez ERR_THROW partout pour gerer systematiquement les exceptions
      */
 
+
+
     cl_int ret = 0;
     cl_event ev;
 
-    if (ptr == NULL)
+    if (ptr == NULL){
         goto error;
+    }
+    else{
+        sinoscope_t sino = *ptr;
+        size_t work_dim[2];
+        work_dim[0] = sino.width;
+        work_dim[1] = sino.height;
 
-done:
+        //1
+        ret = clEnqueueWriteBuffer(queue,sinoscope,CL_TRUE,0,sizeof(sinoscope_t),ptr,0,NULL,NULL);
+        ERR_THROW(CL_SUCCESS,ret,"Enqueue write buffer failed");
+
+        ret = clSetKernelArg(kernel,0,sizeof(cl_mem),&output);
+        ERR_THROW(CL_SUCCESS, ret, "clSetKernelArg failed");
+
+        ret = clSetKernelArg(kernel,1,sizeof(cl_mem),&sinoscope);
+        ERR_THROW(CL_SUCCESS,ret,"clSetKernelArg failed");
+        //2
+        ret = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, work_dim, NULL, 0, NULL, NULL);
+        ERR_THROW(CL_SUCCESS, ret, "clEnqueueNDRangeKernel failed");
+
+        //3
+        ret = clFinish(queue);
+        ERR_THROW(CL_SUCCESS, ret, "clFinish failed");
+
+        //4
+        ret = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sino.buf_size, sino.buf, 0, NULL, NULL);
+        ERR_THROW(CL_SUCCESS, ret, "clEnqueueReadBuffer failed");
+    }
+
+    done:
     return ret;
-error:
+    error:
     ret = -1;
     goto done;
 }
