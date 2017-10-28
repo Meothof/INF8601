@@ -31,8 +31,7 @@ static cl_program prog = NULL;
 static cl_kernel kernel = NULL;
 
 static cl_mem output = NULL;
-//ajout
-static cl_mem sinoscope = NULL;
+
 
 
 int get_opencl_queue()
@@ -143,10 +142,7 @@ int create_buffer(int width, int height)
     if(ret!=CL_SUCCESS)
         goto error;
     
-    
-    sinoscope = clCreateBuffer(context,CL_MEM_READ_ONLY ,sizeof(sinoscope_t), NULL, &ret);
-    if(ret!=CL_SUCCESS)
-        goto error;
+
     done:
     return ret;
     error:
@@ -197,7 +193,7 @@ void opencl_shutdown()
     if(prog) clReleaseProgram(prog);
     if(kernel) clReleaseKernel(kernel);
     if(output) clReleaseMemObject(output);
-    if(sinoscope) clReleaseMemObject(sinoscope);
+
 }
 
 int sinoscope_image_opencl(sinoscope_t *ptr)
@@ -233,20 +229,23 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
     else{
         sinoscope_t sino = *ptr;
         size_t work_dim[2];
-        work_dim[0] = sino.width;
-        work_dim[1] = sino.height;
-
-        //1
-        ret = clEnqueueWriteBuffer(queue,sinoscope,CL_TRUE,0,sizeof(sinoscope_t),ptr,0,NULL,NULL);
-        ERR_THROW(CL_SUCCESS,ret,"Enqueue write buffer failed");
+        work_dim[0] = (size_t) sino.width;
+        work_dim[1] = (size_t) sino.height;
 
         ret = clSetKernelArg(kernel,0,sizeof(cl_mem),&output);
+        
+        ret |= clSetKernelArg(kernel, 1, sizeof(int), &(sino.width));
+        ret |= clSetKernelArg(kernel, 2, sizeof(int), &(sino.interval));
+        ret |= clSetKernelArg(kernel, 3, sizeof(int), &(sino.taylor));
+        ret |= clSetKernelArg(kernel, 4, sizeof(float), &(sino.interval_inv));
+        ret |= clSetKernelArg(kernel, 5, sizeof(float), &(sino.time));
+        ret |= clSetKernelArg(kernel, 6, sizeof(float), &(sino.phase0));
+        ret |= clSetKernelArg(kernel, 7, sizeof(float), &(sino.phase1));
+        ret |= clSetKernelArg(kernel, 8, sizeof(float), &(sino.dx));
+        ret |= clSetKernelArg(kernel, 9, sizeof(float), &(sino.dy));
         ERR_THROW(CL_SUCCESS, ret, "clSetKernelArg failed");
-
-        ret = clSetKernelArg(kernel,1,sizeof(cl_mem),&sinoscope);
-        ERR_THROW(CL_SUCCESS,ret,"clSetKernelArg failed");
-        //2
-        ret = clEnqueueNDRangeKernel(queue, kernel, 2, NULL, work_dim, NULL, 0, NULL, NULL);
+        
+        ret = clEnqueueNDRangeKernel(queue, kernel, 2, 0, work_dim, NULL, 0, NULL, NULL);
         ERR_THROW(CL_SUCCESS, ret, "clEnqueueNDRangeKernel failed");
 
         //3
@@ -259,8 +258,8 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
     }
 
     done:
-    return ret;
+        return ret;
     error:
-    ret = -1;
-    goto done;
+        ret = -1;
+        goto done;
 }
