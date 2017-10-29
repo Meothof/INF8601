@@ -138,6 +138,12 @@ int create_buffer(int width, int height)
      */
     cl_int ret = 0;
     
+    
+    /* La taille du tampon de sortie doit etre de:
+     * surface (width*height)*
+     * 3 (r,g et b) *
+     * sizeof(unsigned char) (type des attributs r,g et b)
+     */
     output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 3*width*height*sizeof(unsigned char), NULL, &ret);
     if(ret!=CL_SUCCESS)
         goto error;
@@ -232,7 +238,13 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
         work_dim[0] = (size_t) sino.width;
         work_dim[1] = (size_t) sino.height;
 
-        ret = clSetKernelArg(kernel,0,sizeof(cl_mem),&output);
+        /*
+         *       1. Passer les arguments au noyau avec clSetKernelArg(). Si des
+         *          arguments sont passees par un tampon, copier les valeurs avec
+         *          clEnqueueWriteBuffer() de maniere synchrone.
+         *
+         */
+        ret = clSetKernelArg(kernel,0,sizeof(cl_mem), &output);
         
         ret |= clSetKernelArg(kernel, 1, sizeof(int), &(sino.width));
         ret |= clSetKernelArg(kernel, 2, sizeof(int), &(sino.interval));
@@ -245,16 +257,32 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
         ret |= clSetKernelArg(kernel, 9, sizeof(float), &(sino.dy));
         ERR_THROW(CL_SUCCESS, ret, "clSetKernelArg failed");
         
-        ret = clEnqueueNDRangeKernel(queue, kernel, 2, 0, work_dim, NULL, 0, NULL, NULL);
+        /*
+         *       2. Appeller le noyau avec clEnqueueNDRangeKernel(). L'argument
+         *          work_dim de clEnqueueNDRangeKernel() est un tableau size_t
+         *          avec les dimensions width et height.
+         */
+        ret = clEnqueueNDRangeKernel(queue, kernel, 2, 0, work_dim, NULL, 0, NULL, &ev);
         ERR_THROW(CL_SUCCESS, ret, "clEnqueueNDRangeKernel failed");
 
-        //3
+        ret = clWaitForEvents(1, &ev);
+        ERR_THROW(CL_SUCCESS, ret, "clWaitForEvent failed");
+        
+        /*
+         *       3. Attendre que le noyau termine avec clFinish()
+         */
         ret = clFinish(queue);
         ERR_THROW(CL_SUCCESS, ret, "clFinish failed");
 
-        //4
-        ret = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sino.buf_size, sino.buf, 0, NULL, NULL);
+        /*
+         *       4. Copier le resultat dans la structure sinoscope_t avec
+         *          clEnqueueReadBuffer() de maniere synchrone
+         */
+        ret = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sino.buf_size, sino.buf, 0, NULL, &ev);
         ERR_THROW(CL_SUCCESS, ret, "clEnqueueReadBuffer failed");
+        
+        ret = clWaitForEvents(1, &ev);
+        ERR_THROW(CL_SUCCESS, ret, "clWaitForEvent failed");
     }
 
     done:

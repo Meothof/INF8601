@@ -89,8 +89,11 @@ void value_color(struct rgb *color, float value, int interval, float interval_in
 
 __kernel void sinoscope_kernel(__global unsigned char *output, const int _width, const int _interval, const int _taylor, const float _interval_inv, const float _time, const float _phase0, const float _phase1, const float _dx, const float _dy)
 {
+    //Invocation de get_global_id pour connaitre quelles coordonées du sinoscope traiter.
      int x = get_global_id(0);
  	  int y = get_global_id(1);
+
+    //Traitement identique que dans le cas sériel
      struct rgb c;
      float px = _dx * x - 2 * M_PI;
      float py = _dy * y - 2 * M_PI;
@@ -103,6 +106,8 @@ __kernel void sinoscope_kernel(__global unsigned char *output, const int _width,
      val = (val + 1) * 100;
      value_color(&c, val, _interval, _interval_inv);
      int index =  (x * 3) + (y * 3) * _width;
+    
+    //On place le résultat dans le tampon de sortie.
      output[index + 0] = c.r;
      output[index + 1] = c.g;
      output[index + 2] = c.b;
