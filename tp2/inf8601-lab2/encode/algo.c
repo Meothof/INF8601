@@ -35,7 +35,7 @@ int encode_fast(struct chunk *chunk)
 
     #pragma omp parallel for private(i) reduction(+:checksum)
     for (i = 0; i < area; i++) {
-        data[i]=data[i]+key;
+        data[i]+=key;
         checksum+=data[i];
     }
     chunk->checksum = checksum;

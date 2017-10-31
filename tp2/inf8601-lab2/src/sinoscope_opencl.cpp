@@ -140,9 +140,9 @@ int create_buffer(int width, int height)
     
     
     /* La taille du tampon de sortie doit etre de:
-     * surface (width*height)*
-     * 3 (r,g et b) *
-     * sizeof(unsigned char) (type des attributs r,g et b)
+     surface (width*height)*
+     3 (r,g et b) *
+     sizeof(unsigned char) (type des attributs r,g et b)
      */
     output = clCreateBuffer(context, CL_MEM_WRITE_ONLY, 3*width*height*sizeof(unsigned char), NULL, &ret);
     if(ret!=CL_SUCCESS)
@@ -245,17 +245,35 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
          *
          */
         ret = clSetKernelArg(kernel,0,sizeof(cl_mem), &output);
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg outp");
+        
         
         ret |= clSetKernelArg(kernel, 1, sizeof(int), &(sino.width));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg width");
+        
         ret |= clSetKernelArg(kernel, 2, sizeof(int), &(sino.interval));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg interval");
+        
         ret |= clSetKernelArg(kernel, 3, sizeof(int), &(sino.taylor));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg taylor");
+        
         ret |= clSetKernelArg(kernel, 4, sizeof(float), &(sino.interval_inv));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg interval_inv");
+        
         ret |= clSetKernelArg(kernel, 5, sizeof(float), &(sino.time));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg time");
+        
         ret |= clSetKernelArg(kernel, 6, sizeof(float), &(sino.phase0));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg phase0");
+        
         ret |= clSetKernelArg(kernel, 7, sizeof(float), &(sino.phase1));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg phase1");
+        
         ret |= clSetKernelArg(kernel, 8, sizeof(float), &(sino.dx));
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg dx");
+        
         ret |= clSetKernelArg(kernel, 9, sizeof(float), &(sino.dy));
-        ERR_THROW(CL_SUCCESS, ret, "clSetKernelArg failed");
+        ERR_THROW(CL_SUCCESS, ret, "Error: clSetKernelArg dy");
         
         /*
          *       2. Appeller le noyau avec clEnqueueNDRangeKernel(). L'argument
@@ -263,26 +281,26 @@ int sinoscope_image_opencl(sinoscope_t *ptr)
          *          avec les dimensions width et height.
          */
         ret = clEnqueueNDRangeKernel(queue, kernel, 2, 0, work_dim, NULL, 0, NULL, &ev);
-        ERR_THROW(CL_SUCCESS, ret, "clEnqueueNDRangeKernel failed");
+        ERR_THROW(CL_SUCCESS, ret, "Error : clEnqueueNDRangeKernel");
 
         ret = clWaitForEvents(1, &ev);
-        ERR_THROW(CL_SUCCESS, ret, "clWaitForEvent failed");
+        ERR_THROW(CL_SUCCESS, ret, "Error: clWaitForEvent ");
         
         /*
          *       3. Attendre que le noyau termine avec clFinish()
          */
         ret = clFinish(queue);
-        ERR_THROW(CL_SUCCESS, ret, "clFinish failed");
+        ERR_THROW(CL_SUCCESS, ret, "Error: clFinish");
 
         /*
          *       4. Copier le resultat dans la structure sinoscope_t avec
          *          clEnqueueReadBuffer() de maniere synchrone
          */
         ret = clEnqueueReadBuffer(queue, output, CL_TRUE, 0, sino.buf_size, sino.buf, 0, NULL, &ev);
-        ERR_THROW(CL_SUCCESS, ret, "clEnqueueReadBuffer failed");
+        ERR_THROW(CL_SUCCESS, ret, "Error: clEnqueueReadBuffer");
         
         ret = clWaitForEvents(1, &ev);
-        ERR_THROW(CL_SUCCESS, ret, "clWaitForEvent failed");
+        ERR_THROW(CL_SUCCESS, ret, "Error: clWaitForEvent");
     }
 
     done:
