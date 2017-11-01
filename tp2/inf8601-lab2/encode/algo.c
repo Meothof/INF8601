@@ -26,13 +26,15 @@ struct cs {
 
 int encode_fast(struct chunk *chunk)
 {
-    // TODO
+    //Creation des variables local pour optimiser les accès aux regsitres.
     int i;
     int checksum = 0;
     int area = chunk->area;
     int key = chunk->key;
     char *data = chunk->data;
 
+    //untilisation d'une seule boucle pour le calcul
+    //utilisation d'une réduction pour calculer le checksum
     #pragma omp parallel for private(i) reduction(+:checksum)
     for (i = 0; i < area; i++) {
         data[i]+=key;

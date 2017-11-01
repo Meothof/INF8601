@@ -134,7 +134,7 @@ int load_kernel_code(char **code, size_t *length)
 int create_buffer(int width, int height)
 {
     /*
-     * TODO: initialiser la memoire requise avec clCreateBuffer()
+     * initialiser la memoire requise avec clCreateBuffer()
      */
     cl_int ret = 0;
     
@@ -194,7 +194,7 @@ void opencl_shutdown()
     if (context)	clReleaseContext(context);
 
     /*
-     * TODO: liberer les ressources allouees
+     * liberer les ressources allouees
      */
     if(prog) clReleaseProgram(prog);
     if(kernel) clReleaseKernel(kernel);
@@ -204,28 +204,7 @@ void opencl_shutdown()
 
 int sinoscope_image_opencl(sinoscope_t *ptr)
 {
-    //TODO("sinoscope_image_opencl");
-    /*
-     * TODO: Executer le noyau avec la fonction run_kernel().
-     *
-     *       1. Passer les arguments au noyau avec clSetKernelArg(). Si des
-     *          arguments sont passees par un tampon, copier les valeurs avec
-     *          clEnqueueWriteBuffer() de maniere synchrone.
-     *
-     *       2. Appeller le noyau avec clEnqueueNDRangeKernel(). L'argument
-     *          work_dim de clEnqueueNDRangeKernel() est un tableau size_t
-     *          avec les dimensions width et height.
-     *
-     *       3. Attendre que le noyau termine avec clFinish()
-     *
-     *       4. Copier le resultat dans la structure sinoscope_t avec
-     *          clEnqueueReadBuffer() de maniere synchrone
-     *
-     *       Utilisez ERR_THROW partout pour gerer systematiquement les exceptions
-     */
-
-
-
+  
     cl_int ret = 0;
     cl_event ev;
 

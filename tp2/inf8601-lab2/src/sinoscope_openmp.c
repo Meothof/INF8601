@@ -15,7 +15,7 @@
 
 int sinoscope_image_openmp(sinoscope_t *ptr)
 {
-    //    TODO("sinoscope_image_openmp");
+    //Si le pointeur est null on sort du programme.
     if (ptr == NULL)
         return -1;
 
@@ -24,6 +24,7 @@ int sinoscope_image_openmp(sinoscope_t *ptr)
     struct rgb c;
     float val, px, py;
 
+    //Utilisation du parallel for avec un collapse pour paralléliser les deux boucles.
     #pragma omp parallel for private(x, y, index, taylor, c, val, px, py) shared(sino) collapse(2)
     for(x=1; x < sino.width - 1; x++){
         for(y=1; y < sino.height - 1; y++){
