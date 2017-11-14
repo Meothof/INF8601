@@ -215,7 +215,10 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 	grid_t *new_grid = NULL;
 
 	/* FIXME: create 2D cartesian communicator */
-
+    MPI_Cart_create(MPI_COMM_WORLD, DIM_2D, ctx->dims, ctx->isperiodic, ctx->reorder, &ctx->comm2d);
+    MPI_Cart_shift(ctx->comm2d, 0, 1, &ctx->north_peer, &ctx->south_peer);
+    MPI_Cart_shift(ctx->comm2d, 1,1, &ctx->east_peer, &ctx->west_peer);
+    MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, ctx->coords);
 	/*
 	 * FIXME: le processus rank=0 charge l'image du disque
 	 * et transfert chaque section aux autres processus
