@@ -225,7 +225,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 	 * et transfert chaque section aux autres processus
 	 */
 
-    MPI_Status status[4 * ctx->numprocs, sizeof(MPI_Status)];
+    MPI_Status status[4 * ctx->numprocs];
     if(ctx->rank == 0){
         /* load input image */
         image_t *image = load_png(opts->input);
@@ -281,7 +281,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 
 
     /* Utilisation temporaire de global_grid */
-//    new_grid = ctx->global_grid;
+    //    new_grid = ctx->global_grid;
 
     if (new_grid == NULL)
         goto err;
@@ -292,8 +292,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     //free_grid(new_grid);
 
     /* FIXME: create type vector to exchange columns */
-    //Attention 1er argurment peut etre ctx->curr_grid->height
-    MPI_Type_vector(ctx->curr_grid->ph, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
+    MPI_Type_vector(ctx->curr_grid->height, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
     MPI_Type_commit(&ctx->vector);
 
     return 0;
@@ -355,10 +354,10 @@ void exchng2d(ctx_t *ctx) {
     MPI_Irecv(offset_recv_east, 1, ctx->vector, east, comm, 3, &req[3]);
 
     //Envoie non bloquant des données
-    MPI_Isend(offset_send_north, width, MPI_DOUBLE, north, 4, comm, &req[4]);
-    MPI_Isend(offset_send_south, width, MPI_DOUBLE, south, 5, comm, &req[5]);
-    MPI_Isend(offset_send_west, 1, ctx->vector, west, 6, comm, &req[6]);
-    MPI_Isend(offset_send_east, 1, ctx->vector, east, 7, comm, &req[7]);
+    MPI_Isend(offset_send_north, width, MPI_DOUBLE, north, 1, comm, &req[4]);
+    MPI_Isend(offset_send_south, width, MPI_DOUBLE, south, 0, comm, &req[5]);
+    MPI_Isend(offset_send_west, 1, ctx->vector, west, 3, comm, &req[6]);
+    MPI_Isend(offset_send_east, 1, ctx->vector, east, 2, comm, &req[7]);
 
     MPI_Waitall(8, req, status);
 
@@ -372,15 +371,48 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
     if (local_grid == NULL)
         goto err;
 
+    MPI_Request req[ctx->numprocs];
+    MPI_Status req[ctx->numprocs];
+
     /*
 	 * FIXME: transfer simulation results from all process to rank=0
 	 * use grid for this purpose
 	 */
+    MPI_Request req[ctx->numprocs];
+    MPI_Status req[ctx->numprocs];
+
+    if(ctx->rank == 0){
+        int coords[DIM_2D];
+        MPI_Cart_coords(ctx->comm2d, 0, DIM_2D, coords);
+        for(int rank = 1, rank < ctx->numprocs, rank++){
+
+            // On récupère les coordonnées cartésiennes du processus rank
+            MPI_Cart_coords(ctx->comm2d, rank, DIM_2D, coords);
+
+            // On récupère la grille locale de ce processus
+            local_grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
+
+            //On place les données envoyés par le processus rank dans la grille correspondante
+            MPI_Irecv(local_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
+        }
+
+        //On attend l'arrivée de tous les messages
+        MPI_Waitall(ctx->numprocs - 1, req, status);
+    }
+    else{
+        //On envoie les données local au processus 0
+        MPI_Isend(local_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, 0, 4, ctx->comm2d, &req[rank - 1]);
+        MPI_Waitall(1, req, status);
+    }
+
+
 
     /* now we can merge all data blocks, reuse global_grid */
     //cart2d_grid_merge(ctx->cart, ctx->global_grid);
     /* temporairement copie de next_grid */
-    grid_copy(ctx->next_grid, ctx->global_grid);
+    //    grid_copy(ctx->next_grid, ctx->global_grid);
+    cart2d_grid_merge(ctx->cart, ctx->global_grid);
+
 
     done: free_grid(local_grid);
     return ret;
