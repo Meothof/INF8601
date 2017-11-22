@@ -183,11 +183,13 @@ ctx_t *make_ctx() {
 void free_ctx(ctx_t *ctx) {
     if (ctx == NULL)
         return;
+        printf("free rank %d \n", ctx->rank);
     free_grid(ctx->global_grid);
     free_grid(ctx->curr_grid);
     free_grid(ctx->next_grid);
     free_grid(ctx->heat_grid);
     free_cart2d(ctx->cart);
+    printf("free rank %d done \n", ctx->rank);
     if (ctx->log != NULL) {
         fflush(ctx->log);
         fclose(ctx->log);
@@ -196,9 +198,11 @@ void free_ctx(ctx_t *ctx) {
 }
 
 int init_ctx(ctx_t *ctx, opts_t *opts) {
-    TODO("lab3");
+//    TODO("lab3");
+    printf("Entree dans init_ctx \n");
     MPI_Comm_size(MPI_COMM_WORLD, &ctx->numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &ctx->rank);
+    printf("1 \n");
 
     if (opts->dimx * opts->dimy != ctx->numprocs) {
         fprintf(stderr,
@@ -216,8 +220,8 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 
     /* FIXME: create 2D cartesian communicator */
     MPI_Cart_create(MPI_COMM_WORLD, DIM_2D, ctx->dims, ctx->isperiodic, ctx->reorder, &ctx->comm2d);
-    MPI_Cart_shift(ctx->comm2d, 0, 1, &ctx->north_peer, &ctx->south_peer);
-    MPI_Cart_shift(ctx->comm2d, 1,1, &ctx->west_peer, &ctx->east_peer);
+    MPI_Cart_shift(ctx->comm2d, 1, 1, &ctx->north_peer, &ctx->south_peer);
+    MPI_Cart_shift(ctx->comm2d, 0,1, &ctx->west_peer, &ctx->east_peer);
     MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, ctx->coords);
 
     /*
@@ -226,7 +230,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 	 */
 
 
-    MPI_Request *req = (MPI_Request *)malloc(4 * ctx->numprocs * sizeof(MPI_Request));
+//    MPI_Request *req = (MPI_Request *)malloc(4 * ctx->numprocs * sizeof(MPI_Request));
     MPI_Status *status = (MPI_Status *)malloc(4 * ctx->numprocs * sizeof(MPI_Status));
     if(ctx->rank == 0){
         /* load input image */
@@ -249,25 +253,27 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 	 * FIXME: send grid dimensions and data
 	 * Comment traiter le cas de rank=0 ?
 	 */
-
+        printf("3 \n");
 	    //Création d'un tableau qui contiendra les coordonnées d'un processus
         int coords[DIM_2D];
-        for(int rank = 1; rank < ctx->numprocs; rank++){
+        int rank;
+        for(rank = 1; rank < ctx->numprocs; rank++){
+            printf("4 \n");
             //On récupère les coordonnées du processus rank
             MPI_Cart_coords(ctx->comm2d, rank, DIM_2D, coords);
             //On récupère le moreceau de grille correspondant
             grid_t *grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
 
-            //On envoie au noeud, les données nécéssaire à la création de sa grille.
-            MPI_Isend(&grid->width, 1, MPI_INTEGER, rank, rank * 4 + 0, ctx->comm2d, &req[rank * 4 + 0]);
-            MPI_Isend(&grid->height, 1, MPI_INTEGER, rank, rank * 4  + 1, ctx->comm2d, &req[rank * 4 + 1]);
-            MPI_Isend(&grid->padding, 1 , MPI_INTEGER, rank, rank * 4  + 2, ctx->comm2d, &req[rank * 4 + 2]);
-            MPI_Isend(grid->dbl, grid->pw * grid->ph, MPI_DOUBLE, rank, rank * 4  + 3, ctx->comm2d, &req[rank * 4 + 3]);
+            //On envoie au noeud, les données nécéssaires à la création de sa grille.
+            MPI_Send(&grid->width, 1, MPI_INTEGER, rank, rank * 4 + 0, ctx->comm2d);
+            MPI_Send(&grid->height, 1, MPI_INTEGER, rank, rank * 4  + 1, ctx->comm2d);
+            MPI_Send(&grid->padding, 1 , MPI_INTEGER, rank, rank * 4  + 2, ctx->comm2d);
+            MPI_Send(grid->dbl, grid->pw * grid->ph, MPI_DOUBLE, rank, rank * 4  + 3, ctx->comm2d);
+             printf("5 \n");
         }
         // Le noeud 0 crée sa propre grille
         MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, coords);
-
-        new_grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
+        new_grid = grid_clone(cart2d_get_grid(ctx->cart, coords[0], coords[1]));
     }
 
     else{
@@ -278,19 +284,20 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         int width;
         int height;
         int padding;
+        int rank = ctx->rank;
         //On récupère les données envoyées par le noeud 0.
-        MPI_Irecv(&width, 1, MPI_INTEGER, 0, ctx->rank * 4 + 0 , ctx->comm2d, &req[0]);
-        MPI_Irecv(&height, 1, MPI_INTEGER, 0, ctx->rank* 4 + 1 , ctx->comm2d, &req[1]);
-        MPI_Irecv(&padding, 1, MPI_INTEGER, 0, ctx->rank* 4 + 2 , ctx->comm2d, &req[2]);
+        MPI_Recv(&width, 1, MPI_INTEGER, 0, ctx->rank * 4 + 0 , ctx->comm2d, &status[rank * 4 + 0]);
+        MPI_Recv(&height, 1, MPI_INTEGER, 0, ctx->rank* 4 + 1 , ctx->comm2d, &status[rank * 4 + 1]);
+        MPI_Recv(&padding, 1, MPI_INTEGER, 0, ctx->rank* 4 + 2 , ctx->comm2d, &status[rank * 4 + 2]);
 
         // On attend que le noeud ai recu width, height et padding
-        MPI_Waitall(3, req, status);
+//        MPI_Waitall(3, req, status);
         //On initialise la grille avec les arguments recus
         new_grid = make_grid(width, height, padding);
 
         // On insère les données recues dans la nouvelle grille
-        MPI_Irecv(new_grid->dbl, new_grid->pw*new_grid->ph, MPI_DOUBLE, 0, ctx->rank * 4 +3, ctx->comm2d, &req[3]);
-        MPI_Waitall(1, req, status);
+        MPI_Recv(new_grid->dbl, new_grid->pw*new_grid->ph, MPI_DOUBLE, 0, ctx->rank * 4 +3, ctx->comm2d, &status[3]);
+//        MPI_Waitall(1, req + 3, status);
 
     }
 
@@ -329,7 +336,7 @@ void exchng2d(ctx_t *ctx) {
 	 *  FIXME: Echanger les bordures avec les voisins
 	 * 4 echanges doivent etre effectues
 	 */
-    TODO("lab3");
+//    TODO("lab3");
 
     grid_t *grid = ctx->next_grid;
     int width = grid->pw;
@@ -366,8 +373,8 @@ void exchng2d(ctx_t *ctx) {
     //Attente de receptions non bloquantes des données
     MPI_Irecv(offset_recv_north, dbl_width, MPI_DOUBLE, north, 0, comm, &req[0]);
     MPI_Irecv(offset_recv_south, dbl_width, MPI_DOUBLE, south, 1, comm, &req[1]);
-    MPI_Irecv(offset_recv_west, 1, ctx->vector, west, comm, 2, &req[2]);
-    MPI_Irecv(offset_recv_east, 1, ctx->vector, east, comm, 3, &req[3]);
+    MPI_Irecv(offset_recv_west, 1, ctx->vector, west, 2, comm, &req[2]);
+    MPI_Irecv(offset_recv_east, 1, ctx->vector, east, 3, comm, &req[3]);
 
     //Envoie non bloquant des données
     MPI_Isend(offset_send_north, dbl_width, MPI_DOUBLE, north, 1, comm, &req[4]);
@@ -380,10 +387,11 @@ void exchng2d(ctx_t *ctx) {
 }
 
 int gather_result(ctx_t *ctx, opts_t *opts) {
-    TODO("lab3");
+//    TODO("lab3");
 
     int ret = 0;
     grid_t *local_grid = grid_padding(ctx->next_grid, 0);
+
     if (local_grid == NULL)
         goto err;
 
@@ -400,16 +408,18 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
         int coords[DIM_2D];
         MPI_Cart_coords(ctx->comm2d, 0, DIM_2D, coords);
 
-        for(int rank = 1; rank < ctx->numprocs; rank++){
+        grid_copy(local_grid, cart2d_get_grid(ctx->cart, coords[0], coords[1]));
+        MPI_Isend(local_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, 0, 4, ctx->comm2d, &req[0]);
+
+        int rank;
+        for(rank = 1; rank < ctx->numprocs; rank++){
 
             // On récupère les coordonnées cartésiennes du processus rank
             MPI_Cart_coords(ctx->comm2d, rank, DIM_2D, coords);
 
-            // On récupère la grille locale de ce processus
-            local_grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
+            //On place les données envoyées par le processus rank dans la grille correspondante
+            MPI_Irecv(cart2d_get_grid(ctx->cart, coords[0], coords[1])->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
 
-            //On place les données envoyés par le processus rank dans la grille correspondante
-            MPI_Irecv(local_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
         }
 
         //On attend l'arrivée de tous les messages
@@ -426,11 +436,15 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
     /* now we can merge all data blocks, reuse global_grid */
     //cart2d_grid_merge(ctx->cart, ctx->global_grid);
     /* temporairement copie de next_grid */
-    //    grid_copy(ctx->next_grid, ctx->global_grid);
+
+
+
     cart2d_grid_merge(ctx->cart, ctx->global_grid);
 
 
-    done: free_grid(local_grid);
+    done:
+    free_grid(local_grid);
+
     return ret;
     err: ret = -1;
     goto done;
