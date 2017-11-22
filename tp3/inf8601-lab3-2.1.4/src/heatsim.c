@@ -392,6 +392,7 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
     int ret = 0;
     grid_t *local_grid = grid_padding(ctx->next_grid, 0);
 
+    grid_t *proc_grid = grid_padding(ctx->next_grid, 0);
     if (local_grid == NULL)
         goto err;
 
@@ -417,8 +418,9 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
             // On récupère les coordonnées cartésiennes du processus rank
             MPI_Cart_coords(ctx->comm2d, rank, DIM_2D, coords);
 
+            proc_grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
             //On place les données envoyées par le processus rank dans la grille correspondante
-            MPI_Irecv(cart2d_get_grid(ctx->cart, coords[0], coords[1])->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
+            MPI_Irecv(proc_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
 
         }
 
