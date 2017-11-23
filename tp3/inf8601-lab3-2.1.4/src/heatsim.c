@@ -197,8 +197,12 @@ void free_ctx(ctx_t *ctx) {
 
 int init_ctx(ctx_t *ctx, opts_t *opts) {
 //    TODO("lab3");
+
+
     MPI_Comm_size(MPI_COMM_WORLD, &ctx->numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &ctx->rank);
+
+//    printf("rank %i enter init \n", ctx->rank);
 
     if (opts->dimx * opts->dimy != ctx->numprocs) {
         fprintf(stderr,
@@ -225,6 +229,14 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         goto err;
 
     r = MPI_Cart_shift(ctx->comm2d, 0,1, &ctx->west_peer, &ctx->east_peer);
+    if(r != MPI_SUCCESS)
+        goto err;
+
+    r = MPI_Cart_shift(ctx->comm2d, 1, -1, &ctx->south_peer, &ctx->north_peer);
+    if(r != MPI_SUCCESS)
+            goto err;
+
+    r = MPI_Cart_shift(ctx->comm2d, 0,-1, &ctx->east_peer, &ctx->west_peer);
     if(r != MPI_SUCCESS)
         goto err;
 
@@ -362,6 +374,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     MPI_Type_vector(ctx->curr_grid->height, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
     MPI_Type_commit(&ctx->vector);
 
+//    printf("rank %i leave init \n", ctx->rank);
     return 0;
     err: return -1;
 }
@@ -376,6 +389,8 @@ void dump_ctx(ctx_t *ctx) {
 }
 
 void exchng2d(ctx_t *ctx) {
+
+//    printf("rank %i enter exchng2d \n", ctx->rank);
 
     grid_t *grid = ctx->curr_grid;
     int width = grid->pw;
@@ -423,15 +438,18 @@ void exchng2d(ctx_t *ctx) {
 
     MPI_Waitall(8, req, status);
 
+
     free(req);
     free(status);
-
+//    printf("rank %i leave exchang2 \n", ctx->rank);
 
 
 
 }
 
 int gather_result(ctx_t *ctx, opts_t *opts) {
+
+//    printf("rank %i enter gatherresult \n", ctx->rank);
 
     int ret = 0;
     int r = MPI_SUCCESS;
@@ -441,41 +459,49 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
     MPI_Request *req = (MPI_Request *)malloc(ctx->numprocs * sizeof(MPI_Request));
     MPI_Status *status = (MPI_Status *)malloc(ctx->numprocs * sizeof(MPI_Status));
 
-
     if(local_grid == NULL || req == NULL || status == NULL){
         goto err;
     }
-
-
-
     //Le rang 0 doit copier lui même le contenu de local_grid et placer les grilles local des autres noeud dans sa grille cart
     if(ctx->rank == 0){
         int coords[DIM_2D];
         r = MPI_Cart_coords(ctx->comm2d, 0, DIM_2D, coords);
-        if(r != MPI_SUCCESS)
+//        printf("MPI cart coord \n");
+        if(r != MPI_SUCCESS){
+            printf("Error MPI cart coord \n");
             goto err;
+        }
+
         //Pour le rang 0, on copie le contenu de local grid dans la grille cart du noeud 0
-        grid_copy(local_grid, cart2d_get_grid(ctx->cart, coords[0], coords[1]));
+        grid_copy(local_grid, cart2d_get_grid(ctx->cart, 0, 0));
         int rank;
         for(rank = 1; rank < ctx->numprocs; rank++){
 
             // On récupère les coordonnées cartésiennes du processus rank
             r = MPI_Cart_coords(ctx->comm2d, rank, DIM_2D, coords);
-            if(r != MPI_SUCCESS)
+            if(r != MPI_SUCCESS){
+                printf("Rank 0 : Error MPI cart coord on %i \n", rank);
                 goto err;
+            }
+
             //On place les données envoyées par le processus rank dans la grille cart du noeud 0
-            r = MPI_Irecv(cart2d_get_grid(ctx->cart, coords[0], coords[1])->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
-            if(r != MPI_SUCCESS)
+            r = MPI_Irecv(cart2d_get_grid(ctx->cart, coords[0], coords[1])->dbl, cart2d_get_grid(ctx->cart, coords[0], coords[1])->height * cart2d_get_grid(ctx->cart, coords[0], coords[1])->width, MPI_DOUBLE, rank, 4, ctx->comm2d, &req[rank - 1]);
+
+            if(r != MPI_SUCCESS){
+                printf("Rank 0 : Error MPI Irecv on %i \n", rank);
                 goto err;
+            }
+
 
         }
-
         //On attend l'arrivée de tous les messages
         MPI_Waitall(ctx->numprocs - 1, req, status);
+
+
     }
     else{
         //On envoie les données locales au processus 0
-        r = MPI_Isend(local_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, 0, 4, ctx->comm2d, &req[0]);
+        r = MPI_Send(local_grid->dbl, local_grid->height * local_grid->width, MPI_DOUBLE, 0, 4, ctx->comm2d);
         if(r != MPI_SUCCESS)
             goto err;
     }
@@ -486,9 +512,11 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
 
 
     done:
+
         free_grid(local_grid);
         free(req);
         free(status);
+
         return ret;
 
 
