@@ -202,7 +202,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     MPI_Comm_size(MPI_COMM_WORLD, &ctx->numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &ctx->rank);
 
-//    printf("rank %i enter init \n", ctx->rank);
+    printf("rank %i enter init \n", ctx->rank);
 
     if (opts->dimx * opts->dimy != ctx->numprocs) {
         fprintf(stderr,
@@ -276,6 +276,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 	 * Comment traiter le cas de rank=0 ?
 	 */
         req = (MPI_Request *)malloc(4 * (ctx->numprocs -1)* sizeof(MPI_Request));
+        status = (MPI_Status *)malloc(4 * (ctx->numprocs -1)* sizeof(MPI_Status));
         if(req == NULL){
             goto err;
         }
@@ -307,6 +308,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 
 
         }
+        MPI_Waitall(4 * (ctx->numprocs -1), req, status);
         // Le noeud 0 crée sa propre grille
         MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, coords);
         new_grid = grid_clone(cart2d_get_grid(ctx->cart, coords[0], coords[1]));
@@ -374,7 +376,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     MPI_Type_vector(ctx->curr_grid->height, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
     MPI_Type_commit(&ctx->vector);
 
-//    printf("rank %i leave init \n", ctx->rank);
+    printf("rank %i leave init \n", ctx->rank);
     return 0;
     err: return -1;
 }
