@@ -527,6 +527,7 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
 }
 
 int main(int argc, char **argv) {
+    
     ctx_t *ctx = NULL;
     int rep, ret;
     opts_t opts;
@@ -542,6 +543,7 @@ int main(int argc, char **argv) {
 
     ctx = make_ctx();
     if (init_ctx(ctx, &opts) < 0)
+        printf("Error in init");
         goto err;
     if (opts.verbose)
         dump_ctx(ctx);
