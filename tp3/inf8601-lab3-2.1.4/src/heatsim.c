@@ -392,15 +392,13 @@ void dump_ctx(ctx_t *ctx) {
 
 void exchng2d(ctx_t *ctx) {
 
-//    printf("rank %i enter exchng2d \n", ctx->rank);
-
     grid_t *grid = ctx->curr_grid;
     int width = grid->pw;
     int height = grid->ph;
     double *data = grid->dbl;
 
     int dbl_width = grid->width;
-    int padding = grid->padding;
+//    int padding = grid->padding;
 
     int north = ctx->north_peer;
     int south = ctx->south_peer;
@@ -414,10 +412,23 @@ void exchng2d(ctx_t *ctx) {
 
 
     //Calcul des offsets
-    double *offset_send_north = data + (width + 1) * padding;
+//    double *offset_send_north = data + (width + 1) * padding;
+//    double *offset_recv_north = offset_send_north - width;
+//
+//    double *offset_send_south = data + width * height - padding * width - padding - dbl_width + 1;
+//    double *offset_recv_south = offset_send_south + width;
+//
+//    double *offset_send_west = offset_send_north;
+//    double *offset_recv_west = offset_send_west - 1;
+//
+//    double *offset_send_east = offset_send_north + dbl_width - 1;
+//    double *offset_recv_east = offset_send_east +1;
+    
+    
+    double *offset_send_north = data + width + 1;
     double *offset_recv_north = offset_send_north - width;
 
-    double *offset_send_south = data + width * height - padding * width - padding - dbl_width + 1;
+    double *offset_send_south = data + width * (height -  1) - dbl_width;
     double *offset_recv_south = offset_send_south + width;
 
     double *offset_send_west = offset_send_north;
@@ -443,16 +454,10 @@ void exchng2d(ctx_t *ctx) {
 
     free(req);
     free(status);
-//    printf("rank %i leave exchang2 \n", ctx->rank);
-
-
 
 }
 
 int gather_result(ctx_t *ctx, opts_t *opts) {
-
-//    printf("rank %i enter gatherresult \n", ctx->rank);
-
     int ret = 0;
     int r = MPI_SUCCESS;
     grid_t *local_grid = grid_padding(ctx->next_grid, 0);
@@ -468,7 +473,6 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
     if(ctx->rank == 0){
         int coords[DIM_2D];
         r = MPI_Cart_coords(ctx->comm2d, 0, DIM_2D, coords);
-//        printf("MPI cart coord \n");
         if(r != MPI_SUCCESS){
             printf("Error MPI cart coord \n");
             goto err;
@@ -542,9 +546,11 @@ int main(int argc, char **argv) {
     MPI_Init(&argc, &argv);
 
     ctx = make_ctx();
-    if (init_ctx(ctx, &opts) < 0)
+    if (init_ctx(ctx, &opts) < 0){
         printf("Error in init");
         goto err;
+    }
+        
     if (opts.verbose)
         dump_ctx(ctx);
 
