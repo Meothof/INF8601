@@ -272,9 +272,9 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         cart2d_grid_split(ctx->cart, ctx->global_grid);
 
         /*
-	 * FIXME: send grid dimensions and data
-	 * Comment traiter le cas de rank=0 ?
-	 */
+        * FIXME: send grid dimensions and data
+        * Comment traiter le cas de rank=0 ?
+        */
         req = (MPI_Request *)malloc(4 * (ctx->numprocs -1)* sizeof(MPI_Request));
         status = (MPI_Status *)malloc(4 * (ctx->numprocs -1)* sizeof(MPI_Status));
         if(req == NULL){
@@ -302,16 +302,21 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
             if(r != MPI_SUCCESS)
                             goto err;
 
-            r = MPI_Isend(grid->dbl, grid->pw * grid->ph, MPI_DOUBLE, rank, rank * 4 + 3, ctx->comm2d, &req[(rank-1) * 4 + 3]);
-            if(r != MPI_SUCCESS)
-                goto err;
+                r = MPI_Isend(grid->dbl, grid->height * grid->width, MPI_DOUBLE, rank, rank * 4 + 3, ctx->comm2d, &req[(rank-1) * 4 + 3]);
+                if(r != MPI_SUCCESS)
+                    goto err;
 
 
         }
         MPI_Waitall(4 * (ctx->numprocs -1), req, status);
         // Le noeud 0 crée sa propre grille
         MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, coords);
-        new_grid = grid_clone(cart2d_get_grid(ctx->cart, coords[0], coords[1]));
+        
+        grid_t *grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
+        
+        new_grid = make_grid(grid->width, grid->height, 0);
+        
+        new_grid = grid_clone(grid);
     }
 
     else{
@@ -346,10 +351,10 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         MPI_Waitall(3, req, status);
 
         // On initialise la grille avec les arguments reçus
-        new_grid = make_grid(width, height, padding);
+        new_grid = make_grid(width, height, 0);
 
         // On insère les données reçues dans la nouvelle grille
-        r = MPI_Irecv(new_grid->dbl, new_grid->pw*new_grid->ph, MPI_DOUBLE, 0, rank * 4 + 3, ctx->comm2d, &req[3]);
+        r = MPI_Irecv(new_grid->dbl, new_grid->height*new_grid->width, MPI_DOUBLE, 0, rank * 4 + 3, ctx->comm2d, &req[3]);
         if(r != MPI_SUCCESS)
             goto err;
 
