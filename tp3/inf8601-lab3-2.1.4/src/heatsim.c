@@ -196,13 +196,13 @@ void free_ctx(ctx_t *ctx) {
 }
 
 int init_ctx(ctx_t *ctx, opts_t *opts) {
-//    TODO("lab3");
+    //    TODO("lab3");
 
 
     MPI_Comm_size(MPI_COMM_WORLD, &ctx->numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &ctx->rank);
 
-    printf("rank %i enter init \n", ctx->rank);
+    //    printf("rank %i enter init \n", ctx->rank);
 
     if (opts->dimx * opts->dimy != ctx->numprocs) {
         fprintf(stderr,
@@ -234,7 +234,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
 
     r = MPI_Cart_shift(ctx->comm2d, 1, -1, &ctx->south_peer, &ctx->north_peer);
     if(r != MPI_SUCCESS)
-            goto err;
+        goto err;
 
     r = MPI_Cart_shift(ctx->comm2d, 0,-1, &ctx->east_peer, &ctx->west_peer);
     if(r != MPI_SUCCESS)
@@ -275,12 +275,12 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         * FIXME: send grid dimensions and data
         * Comment traiter le cas de rank=0 ?
         */
-        req = (MPI_Request *)malloc(4 * (ctx->numprocs -1)* sizeof(MPI_Request));
-        status = (MPI_Status *)malloc(4 * (ctx->numprocs -1)* sizeof(MPI_Status));
+        req = (MPI_Request *)malloc(3 * (ctx->numprocs -1)* sizeof(MPI_Request));
+        status = (MPI_Status *)malloc(3 * (ctx->numprocs -1)* sizeof(MPI_Status));
         if(req == NULL){
             goto err;
         }
-	    //Création d'un tableau qui contiendra les coordonnées d'un processus
+        //Création d'un tableau qui contiendra les coordonnées d'un processus
         int coords[DIM_2D];
         int rank;
         for(rank = 1; rank < ctx->numprocs; rank++){
@@ -290,33 +290,26 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
             grid_t *grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
 
             //On envoie au noeud, les données nécéssaires à la création de sa grille.
-            r = MPI_Isend(&grid->width, 1, MPI_INTEGER, rank, rank * 4 + 0, ctx->comm2d, &req[(rank-1) * 4]);
+            r = MPI_Isend(&grid->width, 1, MPI_INTEGER, rank, rank * 3 + 0, ctx->comm2d, &req[(rank-1) * 3]);
             if(r != MPI_SUCCESS)
                 goto err;
 
-            r = MPI_Isend(&grid->height, 1, MPI_INTEGER, rank, rank * 4 + 1, ctx->comm2d, &req[(rank-1) * 4 + 1]);
+            r = MPI_Isend(&grid->height, 1, MPI_INTEGER, rank, rank * 3 + 1, ctx->comm2d, &req[(rank-1) * 3 + 1]);
             if(r != MPI_SUCCESS)
                 goto err;
 
-            r = MPI_Isend(&grid->padding, 1 , MPI_INTEGER, rank, rank * 4 + 2, ctx->comm2d,&req[(rank-1) * 4] + 2);
+            r = MPI_Isend(grid->dbl, grid->width * grid->height, MPI_DOUBLE, rank, rank * 3 + 2, ctx->comm2d, &req[(rank-1) * 3 + 2]);
             if(r != MPI_SUCCESS)
-                            goto err;
-
-                r = MPI_Isend(grid->dbl, grid->height * grid->width, MPI_DOUBLE, rank, rank * 4 + 3, ctx->comm2d, &req[(rank-1) * 4 + 3]);
-                if(r != MPI_SUCCESS)
-                    goto err;
-
+                goto err;
 
         }
-        MPI_Waitall(4 * (ctx->numprocs -1), req, status);
+        MPI_Waitall(3 * (ctx->numprocs -1), req, status);
+
         // Le noeud 0 crée sa propre grille
         MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, coords);
-        
         grid_t *grid = cart2d_get_grid(ctx->cart, coords[0], coords[1]);
-        
-        new_grid = make_grid(grid->width, grid->height, 0);
-        
         new_grid = grid_clone(grid);
+
     }
 
     else{
@@ -324,41 +317,35 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         * FIXME: receive dimensions of the grid
         * store into new_grid
         */
-        req = (MPI_Request *)malloc(4 * sizeof(MPI_Request));
-        status = (MPI_Status *)malloc(4 * sizeof(MPI_Status));
+        req = (MPI_Request *)malloc(3 * sizeof(MPI_Request));
+        status = (MPI_Status *)malloc(3 * sizeof(MPI_Status));
         if(req == NULL || status == NULL)
             goto err;
 
         int width;
         int height;
-        int padding;
         int rank = ctx->rank;
         //On récupère les données envoyées par le noeud 0.
-        r = MPI_Irecv(&width, 1, MPI_INTEGER, 0, rank * 4 + 0 , ctx->comm2d, &req[0]);
+        r = MPI_Irecv(&width, 1, MPI_INTEGER, 0, rank * 3 + 0 , ctx->comm2d, &req[0]);
         if(r != MPI_SUCCESS)
             goto err;
 
-        r = MPI_Irecv(&height, 1, MPI_INTEGER, 0, rank * 4 + 1 , ctx->comm2d, &req[1]);
+        r = MPI_Irecv(&height, 1, MPI_INTEGER, 0, rank * 3 + 1 , ctx->comm2d, &req[1]);
         if(r != MPI_SUCCESS)
             goto err;
-
-        r = MPI_Irecv(&padding, 1, MPI_INTEGER, 0, rank * 4 + 2 , ctx->comm2d, &req[2]);
-        if(r != MPI_SUCCESS)
-            goto err;
-
 
         // On attend que le noeud ai recu width, height et padding
-        MPI_Waitall(3, req, status);
+        MPI_Waitall(2, req, status);
 
         // On initialise la grille avec les arguments reçus
         new_grid = make_grid(width, height, 0);
 
         // On insère les données reçues dans la nouvelle grille
-        r = MPI_Irecv(new_grid->dbl, new_grid->height*new_grid->width, MPI_DOUBLE, 0, rank * 4 + 3, ctx->comm2d, &req[3]);
-        if(r != MPI_SUCCESS)
+        r = MPI_Irecv(new_grid->dbl, width * height, MPI_DOUBLE, 0, rank * 3 + 2, ctx->comm2d, &req[2]);
+        if(r != MPI_SUCCESS){
             goto err;
-
-        MPI_Waitall(1, req + 3, status);
+        }
+        MPI_Waitall(1, req + 2, status);
         // On libère le tableau status
         free(status);
 
@@ -381,7 +368,7 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     MPI_Type_vector(ctx->curr_grid->height, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
     MPI_Type_commit(&ctx->vector);
 
-    printf("rank %i leave init \n", ctx->rank);
+    //    printf("rank %i leave init \n", ctx->rank);
     return 0;
     err: return -1;
 }
@@ -403,7 +390,7 @@ void exchng2d(ctx_t *ctx) {
     double *data = grid->dbl;
 
     int dbl_width = grid->width;
-//    int padding = grid->padding;
+    //    int padding = grid->padding;
 
     int north = ctx->north_peer;
     int south = ctx->south_peer;
@@ -417,19 +404,7 @@ void exchng2d(ctx_t *ctx) {
 
 
     //Calcul des offsets
-//    double *offset_send_north = data + (width + 1) * padding;
-//    double *offset_recv_north = offset_send_north - width;
-//
-//    double *offset_send_south = data + width * height - padding * width - padding - dbl_width + 1;
-//    double *offset_recv_south = offset_send_south + width;
-//
-//    double *offset_send_west = offset_send_north;
-//    double *offset_recv_west = offset_send_west - 1;
-//
-//    double *offset_send_east = offset_send_north + dbl_width - 1;
-//    double *offset_recv_east = offset_send_east +1;
-    
-    
+
     double *offset_send_north = data + width + 1;
     double *offset_recv_north = offset_send_north - width;
 
@@ -524,19 +499,19 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
 
     done:
 
-        free_grid(local_grid);
-        free(req);
-        free(status);
+    free_grid(local_grid);
+    free(req);
+    free(status);
 
-        return ret;
+    return ret;
 
 
     err: ret = -1;
-        goto done;
+    goto done;
 }
 
 int main(int argc, char **argv) {
-    
+
     ctx_t *ctx = NULL;
     int rep, ret;
     opts_t opts;
@@ -555,7 +530,7 @@ int main(int argc, char **argv) {
         printf("Error in init");
         goto err;
     }
-        
+
     if (opts.verbose)
         dump_ctx(ctx);
 
