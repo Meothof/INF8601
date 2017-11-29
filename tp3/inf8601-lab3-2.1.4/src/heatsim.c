@@ -202,8 +202,6 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     MPI_Comm_size(MPI_COMM_WORLD, &ctx->numprocs);
     MPI_Comm_rank(MPI_COMM_WORLD, &ctx->rank);
 
-    //    printf("rank %i enter init \n", ctx->rank);
-
     if (opts->dimx * opts->dimy != ctx->numprocs) {
         fprintf(stderr,
                 "2D decomposition blocks must equal number of process\n");
@@ -277,7 +275,14 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         */
         req = (MPI_Request *)malloc(3 * (ctx->numprocs -1)* sizeof(MPI_Request));
         status = (MPI_Status *)malloc(3 * (ctx->numprocs -1)* sizeof(MPI_Status));
+
+        //Verification des erreurs
         if(req == NULL){
+            printf("Malloc error");
+            goto err;
+        }
+        if(status == NULL){
+            printf("Malloc error");
             goto err;
         }
         //Création d'un tableau qui contiendra les coordonnées d'un processus
@@ -303,7 +308,11 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
                 goto err;
 
         }
-        MPI_Waitall(3 * (ctx->numprocs -1), req, status);
+        r = MPI_Waitall(3 * (ctx->numprocs -1), req, status);
+        if(r != MPI_SUCCESS){
+            printf("Error in waitall \n");
+            goto err;
+        }
 
         // Le noeud 0 crée sa propre grille
         MPI_Cart_coords(ctx->comm2d, ctx->rank, DIM_2D, coords);
@@ -319,6 +328,16 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         */
         req = (MPI_Request *)malloc(3 * sizeof(MPI_Request));
         status = (MPI_Status *)malloc(3 * sizeof(MPI_Status));
+
+        //Verification des erreurs
+        if(req == NULL){
+            printf("Malloc error");
+            goto err;
+        }
+        if(status == NULL){
+            printf("Malloc error");
+            goto err;
+        }
         if(req == NULL || status == NULL)
             goto err;
 
@@ -335,7 +354,11 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
             goto err;
 
         // On attend que le noeud ai recu width, height et padding
-        MPI_Waitall(2, req, status);
+        r = MPI_Waitall(2, req, status);
+        if(r != MPI_SUCCESS){
+            printf("Error in waitall \n");
+            goto err;
+        }
 
         // On initialise la grille avec les arguments reçus
         new_grid = make_grid(width, height, 0);
@@ -345,7 +368,11 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
         if(r != MPI_SUCCESS){
             goto err;
         }
-        MPI_Waitall(1, req + 2, status);
+        r = MPI_Waitall(1, req + 2, status);
+        if(r != MPI_SUCCESS){
+            printf("Error in waitall \n");
+            goto err;
+        }
         // On libère le tableau status
         free(status);
 
@@ -365,10 +392,17 @@ int init_ctx(ctx_t *ctx, opts_t *opts) {
     free_grid(new_grid);
 
     /* FIXME: create type vector to exchange columns */
-    MPI_Type_vector(ctx->curr_grid->height, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
-    MPI_Type_commit(&ctx->vector);
+    r=MPI_Type_vector(ctx->curr_grid->height, 1, ctx->curr_grid->pw, MPI_DOUBLE, &ctx->vector);
+    if(r != MPI_SUCCESS){
+        printf("error while creating vector");
+        goto err;
+    }
+    r=MPI_Type_commit(&ctx->vector);
+    if(r != MPI_SUCCESS){
+        printf("error while commiting vector");
+        goto err;
+    }
 
-    //    printf("rank %i leave init \n", ctx->rank);
     return 0;
     err: return -1;
 }
@@ -390,8 +424,6 @@ void exchng2d(ctx_t *ctx) {
     double *data = grid->dbl;
 
     int dbl_width = grid->width;
-    //    int padding = grid->padding;
-
     int north = ctx->north_peer;
     int south = ctx->south_peer;
     int west = ctx->west_peer;
@@ -401,10 +433,7 @@ void exchng2d(ctx_t *ctx) {
     MPI_Request *req = (MPI_Request *)malloc(8 * sizeof(MPI_Request));
     MPI_Status *status = (MPI_Status *)malloc(8 * sizeof(MPI_Status));
 
-
-
     //Calcul des offsets
-
     double *offset_send_north = data + width + 1;
     double *offset_recv_north = offset_send_north - width;
 
@@ -415,7 +444,7 @@ void exchng2d(ctx_t *ctx) {
     double *offset_recv_west = offset_send_west - 1;
 
     double *offset_send_east = offset_send_north + dbl_width - 1;
-    double *offset_recv_east = offset_send_east +1;
+    double *offset_recv_east = offset_send_east + 1;
 
     //Attente de receptions non bloquantes des données
     MPI_Irecv(offset_recv_north, dbl_width, MPI_DOUBLE, north, 0, comm, &req[0]);
@@ -431,7 +460,6 @@ void exchng2d(ctx_t *ctx) {
 
     MPI_Waitall(8, req, status);
 
-
     free(req);
     free(status);
 
@@ -445,6 +473,16 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
 
     MPI_Request *req = (MPI_Request *)malloc(ctx->numprocs * sizeof(MPI_Request));
     MPI_Status *status = (MPI_Status *)malloc(ctx->numprocs * sizeof(MPI_Status));
+
+    //Verification des erreurs
+    if(req == NULL){
+        printf("Malloc error");
+        goto err;
+    }
+    if(status == NULL){
+        printf("Malloc error");
+        goto err;
+    }
 
     if(local_grid == NULL || req == NULL || status == NULL){
         goto err;
@@ -481,8 +519,11 @@ int gather_result(ctx_t *ctx, opts_t *opts) {
 
         }
         //On attend l'arrivée de tous les messages
-        MPI_Waitall(ctx->numprocs - 1, req, status);
-
+        r = MPI_Waitall(ctx->numprocs - 1, req, status);
+        if(r != MPI_SUCCESS){
+            printf("Error in waitall \n");
+            goto err;
+        }
 
     }
     else{
